@@ -1,10 +1,14 @@
 {
-  "projects": {
-    "frontend": {
-      "root": "frontend"
-    },
-    "backend": {
-      "root": "backend"
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/client/$1"
+    }
+  ]
 }

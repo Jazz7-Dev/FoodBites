@@ -16,6 +16,8 @@ export default function Profile({ token }) {
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -49,6 +51,9 @@ export default function Profile({ token }) {
       setFormSuccess(res.data.message);
       setOldPassword("");
       setNewPassword("");
+      // Log out user after password change
+      localStorage.removeItem("token");
+      window.location.href = "/";
     } catch (err) {
       setFormError(err.response?.data?.message || "Failed to change password");
     }
@@ -89,6 +94,11 @@ export default function Profile({ token }) {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-emerald-50 flex items-center justify-center">
@@ -111,14 +121,14 @@ export default function Profile({ token }) {
   return (
     <div className="min-h-screen bg-emerald-50 pt-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-2xl shadow-lg overflow-hidden border border-emerald-100"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-emerald-100 to-emerald-200 px-10 py-8 text-center">
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -130,35 +140,52 @@ export default function Profile({ token }) {
 
           {/* Content */}
           <div className="px-8 py-8">
-            {/* Error Message */}
             {(error || formError) && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="mb-8 p-4 bg-red-50 rounded-xl border border-red-100 flex items-center space-x-3"
               >
-                <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                <svg
+                  className="w-6 h-6 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
                 </svg>
                 <span className="text-red-600 font-medium">{error || formError}</span>
               </motion.div>
             )}
 
-            {/* Success Message */}
             {formSuccess && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="mb-8 p-4 bg-green-50 rounded-xl border border-green-100 flex items-center space-x-3"
               >
-                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                <svg
+                  className="w-6 h-6 text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span className="text-green-600 font-medium">{formSuccess}</span>
               </motion.div>
             )}
 
-            {/* Profile Info */}
             {user && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <motion.div
@@ -198,22 +225,80 @@ export default function Profile({ token }) {
                   <div className="space-y-4">
                     <form onSubmit={handleChangePassword} className="space-y-4 mb-6">
                       <h3 className="text-lg font-semibold text-emerald-800 mb-2">Change Password</h3>
-                      <input
-                        type="password"
-                        placeholder="Old Password"
-                        value={oldPassword}
-                        onChange={(e) => setOldPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-emerald-200 rounded-lg"
-                        required
-                      />
-                      <input
-                        type="password"
-                        placeholder="New Password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-emerald-200 rounded-lg"
-                        required
-                      />
+                      <div className="relative">
+                        <input
+                          type={showOldPassword ? "text" : "password"}
+                          placeholder="Old Password"
+                          value={oldPassword}
+                          onChange={(e) => setOldPassword(e.target.value)}
+                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowOldPassword(!showOldPassword)}
+                          className="absolute right-2 top-2 text-emerald-600"
+                          tabIndex={-1}
+                        >
+                          {showOldPassword ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path d="M10 3C5 3 1.73 7.11 1 10c.73 2.89 4 7 9 7s8.27-4.11 9-7c-.73-2.89-4-7-9-7zM10 15a5 5 0 110-10 5 5 0 010 10z" />
+                              <path d="M10 7a3 3 0 100 6 3 3 0 000-6z" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? "text" : "password"}
+                          placeholder="New Password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-2 top-2 text-emerald-600"
+                          tabIndex={-1}
+                        >
+                          {showNewPassword ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" />
+                            </svg>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path d="M10 3C5 3 1.73 7.11 1 10c.73 2.89 4 7 9 7s8.27-4.11 9-7c-.73-2.89-4-7-9-7zM10 15a5 5 0 110-10 5 5 0 010 10z" />
+                              <path d="M10 7a3 3 0 100 6 3 3 0 000-6z" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                       <button
                         type="submit"
                         className="w-full bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-4 py-2 rounded-lg font-medium transition-all"
@@ -247,6 +332,14 @@ export default function Profile({ token }) {
                         Update Profile
                       </button>
                     </form>
+
+                    {/* Logout Button */}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-4 py-2 rounded-lg font-medium transition-all mb-4"
+                    >
+                      Logout
+                    </button>
 
                     <button
                       onClick={handleDeleteAccount}
