@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { getFoodAsset } from "../utils/foodAssets";
 
 export default function Cart({ token }) {
   const { 
@@ -20,6 +21,8 @@ export default function Cart({ token }) {
   const [loading, setLoading] = useState(false);
   const [removingItem, setRemovingItem] = useState(null);
   const [showClearModal, setShowClearModal] = useState(false);
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const handleRemoveItem = async (itemId) => {
     setRemovingItem(itemId);
@@ -67,7 +70,7 @@ export default function Cart({ token }) {
       };
 
       await axios.post(
-        "http://localhost:5000/api/orders",
+        `${API_BASE_URL}/api/orders`,
         orderPayload,
         { 
           headers: { 
@@ -146,24 +149,35 @@ export default function Cart({ token }) {
               <>
                 <div className="space-y-6 mb-8">
                   <AnimatePresence>
-                    {cart.map((item) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: -50 }}
-                        transition={{ duration: 0.3 }}
-                        className="bg-white rounded-xl p-6 border border-emerald-200 hover:border-emerald-300 transition-all duration-300 shadow-sm"
-                      >
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                          {/* Item Info */}
+                    {cart.map((item) => {
+                      const asset = getFoodAsset(item);
+                      const imageUrl = item.image 
+                        ? item.image.startsWith('http') 
+                          ? item.image 
+                          : `${API_BASE_URL}${item.image}`
+                        : asset.defaultImage;
+
+                      return (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, x: -50 }}
+                          transition={{ duration: 0.3 }}
+                          className="bg-white rounded-xl p-6 border border-emerald-200 hover:border-emerald-300 transition-all duration-300 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                        >
+                          {/* Item Image */}
                           <div className="flex items-center space-x-4 flex-1">
-                            <motion.div 
-                              whileHover={{ rotate: 10 }}
-                              className="bg-emerald-100 p-3 rounded-lg"
-                            >
-                              <span className="text-2xl">🍔</span>
-                            </motion.div>
+                            <motion.img
+                              src={imageUrl}
+                              alt={item.name}
+                              className="w-20 h-20 rounded-lg object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = asset.defaultImage;
+                              }}
+                            />
                             <div className="flex-1">
                               <h3 className="font-semibold text-emerald-800">{item.name}</h3>
                               <div className="flex items-center gap-2 mt-3">
@@ -212,9 +226,9 @@ export default function Cart({ token }) {
                               ) : 'Remove'}
                             </motion.button>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      );
+                    })}
                   </AnimatePresence>
                 </div>
 

@@ -6,7 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Login({ setToken }) {
-  const [form, setForm] = useState({ username: "", password: "" });
+  const [form, setForm] = useState({ identifier: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +18,7 @@ export default function Login({ setToken }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
     setLoading(true);
 
     try {
@@ -99,18 +100,18 @@ export default function Login({ setToken }) {
             <div className="space-y-4">
               <div>
                 <label
-                  htmlFor="username"
+                  htmlFor="identifier"
                   className="block text-sm font-medium text-emerald-700 mb-2"
                 >
-                  Username
+                  Username or Email
                 </label>
                 <motion.div whileHover={{ y: -2 }} className="relative">
                   <input
                     type="text"
-                    id="username"
-                    name="username"
-                    placeholder="Enter your username"
-                    value={form.username}
+                    id="identifier"
+                    name="identifier"
+                    placeholder="Enter your username or email"
+                    value={form.identifier}
                     onChange={handleChange}
                     required
                     disabled={loading}
@@ -208,4 +209,3 @@ export default function Login({ setToken }) {
     </div>
   );
 }
-// This code is a React component for a login page. It uses Framer Motion for animations, React Toastify for notifications, and Axios for API requests. The component includes form validation, loading states, and error handling. The layout is styled with Tailwind CSS, and it features a gradient background with a blurred effect.

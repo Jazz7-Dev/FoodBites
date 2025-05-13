@@ -1,12 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 
 const Navbar = () => {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <nav className="bg-white shadow-sm p-4 flex items-center justify-between border-b border-green-100">
+    <nav
+      className={`sticky top-0 z-50 bg-white p-4 flex items-center justify-between border-b border-green-100 transition-shadow duration-300 ${
+        scrolled ? 'shadow-lg' : 'shadow-sm'
+      }`}
+    >
       {/* Company Logo/Name */}
       <div className="flex items-center ml-4">
-        <h1 className="text-2xl font-bold text-emerald-600">FoodBites</h1>
+        <h1
+          className="text-2xl font-bold text-emerald-600 cursor-pointer"
+          onClick={() => {
+            window.location.href = "/";
+          }}
+        >
+          FoodBites
+        </h1>
       </div>
 
       {/* Navigation Links */}
@@ -15,7 +36,7 @@ const Navbar = () => {
           to="/"
           className={({ isActive }) =>
             isActive
-              ? 'text-emerald-600 font-medium border-b-2 border-emerald-500 pb-1 transition-all duration-200'
+              ? 'text-emerald-600 font-bold border-b-4 border-emerald-700 pb-1 transition-all duration-200'
               : 'text-gray-600 hover:text-emerald-500 transition-colors duration-200'
           }
         >
@@ -25,7 +46,7 @@ const Navbar = () => {
           to="/foods"
           className={({ isActive }) =>
             isActive
-              ? 'text-emerald-600 font-medium border-b-2 border-emerald-500 pb-1 transition-all duration-200'
+              ? 'text-emerald-600 font-bold border-b-4 border-emerald-700 pb-1 transition-all duration-200'
               : 'text-gray-600 hover:text-emerald-500 transition-colors duration-200'
           }
         >
@@ -35,7 +56,7 @@ const Navbar = () => {
           to="/cart"
           className={({ isActive }) =>
             isActive
-              ? 'text-emerald-600 font-medium border-b-2 border-emerald-500 pb-1 transition-all duration-200'
+              ? 'text-emerald-600 font-bold border-b-4 border-emerald-700 pb-1 transition-all duration-200'
               : 'text-gray-600 hover:text-emerald-500 transition-colors duration-200'
           }
         >
@@ -45,7 +66,7 @@ const Navbar = () => {
           to="/orders"
           className={({ isActive }) =>
             isActive
-              ? 'text-emerald-600 font-medium border-b-2 border-emerald-500 pb-1 transition-all duration-200'
+              ? 'text-emerald-600 font-bold border-b-4 border-emerald-700 pb-1 transition-all duration-200'
               : 'text-gray-600 hover:text-emerald-500 transition-colors duration-200'
           }
         >
@@ -55,7 +76,7 @@ const Navbar = () => {
           to="/profile"
           className={({ isActive }) =>
             isActive
-              ? 'text-emerald-600 font-medium border-b-2 border-emerald-500 pb-1 transition-all duration-200'
+              ? 'text-emerald-600 font-bold border-b-4 border-emerald-700 pb-1 transition-all duration-200'
               : 'text-gray-600 hover:text-emerald-500 transition-colors duration-200'
           }
         >

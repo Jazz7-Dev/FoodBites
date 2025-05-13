@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 import { motion } from "framer-motion";
 
 const API_BASE_URL = "http://localhost:5000/api";
@@ -23,7 +23,7 @@ export default function Profile({ token }) {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${API_BASE_URL}/users/profile`, {
+        const res = await axiosInstance.get("/users/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(res.data);
@@ -43,8 +43,8 @@ export default function Profile({ token }) {
     setFormError("");
     setFormSuccess("");
     try {
-      const res = await axios.put(
-        `${API_BASE_URL}/users/profile/password`,
+      const res = await axiosInstance.put(
+        "/users/profile/password",
         { oldPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -64,8 +64,8 @@ export default function Profile({ token }) {
     setFormError("");
     setFormSuccess("");
     try {
-      const res = await axios.put(
-        `${API_BASE_URL}/users/profile`,
+      const res = await axiosInstance.put(
+        "/users/profile",
         { username, email },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -83,7 +83,7 @@ export default function Profile({ token }) {
     setFormError("");
     setFormSuccess("");
     try {
-      const res = await axios.delete(`${API_BASE_URL}/users/profile`, {
+      const res = await axiosInstance.delete("/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFormSuccess(res.data.message);

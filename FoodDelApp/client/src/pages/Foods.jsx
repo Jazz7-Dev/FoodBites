@@ -1,81 +1,177 @@
-import { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext, useRef, useMemo, useCallback } from "react";
 import axios from "axios";
 import { CartContext } from "../context/CartContext";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
+import { 
+  FOOD_ASSETS, 
+  KEYWORDS, 
+  CUISINES, 
+  VARIANTS, 
+  getFoodAsset 
+} from "../utils/foodAssets";
 
-const foodEmojis = {
-  burger: "🍔",
-  pizza: "🍕",
-  sushi: "🍣",
-  pasta: "🍝",
-  salad: "🥗",
-  dessert: "🍰",
-  drink: "🥤",
-  vegan: "🌱",
-  spicy: "🌶️",
-  breakfast: "🥞",
-  default: "🍽️"
-};
+const FoodCard = React.memo(({ food, index, highlightedId, loadingId, handleAddToCart }) => (
+  <motion.div
+    key={food.id}
+    initial={{ opacity: 0, y: 50 }}
+    animate={{ 
+      opacity: 1, 
+      y: 0,
+      borderColor: highlightedId === food.id ? '#059669' : '#d1fae5'
+    }}
+    transition={{ duration: 0.5, delay: index * 0.1 }}
+    whileHover={{ y: -10 }}
+    id={`food-${food.id}`}
+    className={`bg-white rounded-2xl shadow-lg overflow-hidden border-2 transition-colors duration-300 ${
+      highlightedId === food.id ? 'border-emerald-400' : 'border-emerald-100'
+    }`}
+  >
+    <div className="h-64 bg-emerald-50 flex items-center justify-center overflow-hidden relative">
+      <motion.img 
+        src={food.image} 
+        alt={food.name}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="h-full w-full object-cover"
+        loading="lazy"
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = getFoodAsset(food).defaultImage;
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-emerald-100/70 via-transparent to-transparent" />
+      <div className="absolute top-4 right-4 bg-white/90 rounded-full p-2 shadow-md">
+        <span className="text-2xl">{food.emoji}</span>
+      </div>
+    </div>
+    <div className="p-6">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <motion.h3 whileHover={{ x: 2 }} className="text-xl font-semibold text-emerald-800">
+            {food.name}
+          </motion.h3>
+          <p className="text-emerald-600 text-sm mt-2">{food.description || "Delicious food item"}</p>
+        </div>
+        <motion.span whileHover={{ scale: 1.1 }} className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium">
+          ₹{food.price}
+        </motion.span>
+      </div>
+      <motion.button
+        onClick={() => handleAddToCart(food)}
+        disabled={loadingId === food.id}
+        whileHover={{ scale: loadingId === food.id ? 1 : 1.05 }}
+        whileTap={{ scale: loadingId === food.id ? 1 : 0.95 }}
+        className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all relative overflow-hidden disabled:opacity-50"
+      >
+        <div className="absolute inset-0 bg-white/10 opacity-0 hover:opacity-20 transition-opacity" />
+        {loadingId === food.id ? (
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-5 h-5 border-2 border-white/30 rounded-full animate-spin border-t-white" />
+            <span>Adding...</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center space-x-2">
+            <span>+</span>
+            <span>Add to Cart</span>
+          </div>
+        )}
+      </motion.button>
+    </div>
+  </motion.div>
+));
 
-export default function Foods() {
+function Foods() {
   const [foods, setFoods] = useState([]);
   const [error, setError] = useState("");
   const [loadingId, setLoadingId] = useState(null);
   const [flyingItem, setFlyingItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [highlightedId, setHighlightedId] = useState(null);
   const cartRef = useRef(null);
+  const navigate = useNavigate();
   const { cart, addToCart } = useContext(CartContext);
   const location = useLocation();
-  const [highlightedId, setHighlightedId] = useState(null);
 
-  useEffect(() => {
-    const fetchFoods = async () => {
-      try {
-        setIsLoading(true);
-        const params = new URLSearchParams(location.search);
-        const cuisine = params.get("cuisine");
-        const searchName = params.get("search");
-        const url = cuisine
-          ? `http://localhost:5000/api/foods?search=${encodeURIComponent(cuisine)}`
-          : searchName
-          ? `http://localhost:5000/api/foods?search=${encodeURIComponent(searchName)}`
-          : "http://localhost:5000/api/foods";
-        const res = await axios.get(url);
-        const foodsWithId = res.data.map(food => ({
+  const fetchFoods = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams(location.search);
+      const cuisine = params.get("cuisine");
+      const searchName = params.get("search");
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      
+      let url = `${API_BASE_URL}/api/foods`;
+      const queryParams = [];
+      if (cuisine) queryParams.push(`search=${encodeURIComponent(cuisine)}`);
+      if (searchName) queryParams.push(`search=${encodeURIComponent(searchName)}`);
+      if (queryParams.length) url += `?${queryParams.join("&")}`;
+
+      const res = await axios.get(url, {
+        timeout: 10000,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      });
+
+      if (!res.data || !Array.isArray(res.data)) {
+        throw new Error("Invalid data format received from server");
+      }
+
+      const foodsWithAssets = res.data.map(food => {
+        const asset = getFoodAsset(food);
+        return {
           ...food,
           id: food._id,
-          image: food.image ? `http://localhost:5000${food.image}` : null
-        }));
+          image: food.image ? `${API_BASE_URL}${food.image}` : asset.defaultImage,
+          emoji: asset.emoji
+        };
+      });
 
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setFoods(foodsWithId);
+      setFoods(foodsWithAssets);
 
-        if (searchName) {
-          const matchedFood = foodsWithId.find(food => food.name.toLowerCase() === searchName.toLowerCase());
-          if (matchedFood) {
-            setHighlightedId(matchedFood.id);
-            // Scroll to the matched food item after a short delay
-            setTimeout(() => {
-              const element = document.getElementById(`food-${matchedFood.id}`);
-              if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            }, 500);
-          }
+      if (searchName) {
+        const matchedFood = foodsWithAssets.find(food => food.name.toLowerCase() === searchName.toLowerCase());
+        if (matchedFood) {
+          setHighlightedId(matchedFood.id);
+          setTimeout(() => {
+            const element = document.getElementById(`food-${matchedFood.id}`);
+            element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 500);
         }
-      } catch {
-        setError("Failed to load the menu");
-      } finally {
-        setIsLoading(false);
       }
-    };
-    fetchFoods();
+    } catch (err) {
+      let errorMessage = "Failed to load the menu";
+      if (err.response) {
+        errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
+      } else if (err.request) {
+        errorMessage = "Network error - could not connect to server";
+      } else {
+        errorMessage = err.message || "Request setup error";
+      }
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        position: "bottom-right",
+        theme: "colored",
+        className: "bg-red-500 text-white"
+      });
+      setFoods([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [location.search]);
 
-  const handleAddToCart = async (food) => {
+  useEffect(() => {
+    fetchFoods();
+  }, [location.search, fetchFoods]);
+
+  const handleAddToCart = useCallback(async (food) => {
     setLoadingId(food.id);
     try {
       const itemElement = document.getElementById(`food-${food.id}`);
@@ -83,29 +179,31 @@ export default function Foods() {
         const rect = itemElement.getBoundingClientRect();
         setFlyingItem({
           id: food.id,
-          name: food.name,
-          emoji: foodEmojis[food.category?.toLowerCase()] || foodEmojis.default,
+          emoji: food.emoji,
           startX: rect.left + rect.width / 2,
           startY: rect.top + rect.height / 2,
           endX: cartRef.current?.getBoundingClientRect().left || 0,
           endY: cartRef.current?.getBoundingClientRect().top || 0
         });
       }
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-      addToCart(food);
-      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      addToCart({ ...food, image: food.image });
       toast.success(`${food.name} added to cart!`, {
         position: "bottom-right",
-        theme: "light"
+        theme: "colored",
+        className: "bg-emerald-500 text-white"
       });
     } catch {
-      toast.error("Failed to add item");
+      toast.error("Failed to add item to cart", {
+        position: "bottom-right",
+        theme: "colored",
+        className: "bg-red-500 text-white"
+      });
     } finally {
-      setTimeout(() => setFlyingItem(null), 1000);
+      setTimeout(() => setFlyingItem(null), 800);
       setLoadingId(null);
     }
-  };
+  }, [addToCart]);
 
   if (isLoading) {
     return (
@@ -128,9 +226,7 @@ export default function Foods() {
 
   return (
     <div className="min-h-screen bg-emerald-50 py-12 px-4 sm:px-6 lg:px-8 relative">
-      <ToastContainer position="bottom-right" theme="light" />
-      
-      {/* Floating Cart Counter */}
+      <ToastContainer position="bottom-right" autoClose={3000} />
       <div className="fixed top-16 right-6 z-50" ref={cartRef}>
         <Link to="/cart" className="relative group">
           <motion.div 
@@ -151,168 +247,53 @@ export default function Foods() {
           </motion.div>
         </Link>
       </div>
-
-      {/* Flying Item Animation */}
-      {flyingItem && (
-        <motion.div 
-          initial={{ 
-            x: 0,
-            y: 0,
-            opacity: 1,
-            scale: 1
-          }}
-          animate={{ 
-            x: flyingItem.endX - flyingItem.startX,
-            y: flyingItem.endY - flyingItem.startY,
-            opacity: 0,
-            scale: 0.5
-          }}
-          transition={{ 
-            duration: 1,
-            ease: [0.22, 1, 0.36, 1]
-          }}
-          className="fixed z-50 text-3xl pointer-events-none"
-          style={{
-            left: `${flyingItem.startX}px`,
-            top: `${flyingItem.startY}px`,
-          }}
-        >
-          {flyingItem.emoji}
-        </motion.div>
-      )}
-
+      <AnimatePresence>
+        {flyingItem && (
+          <motion.div 
+            key={`flying-${flyingItem.id}`}
+            initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+            animate={{ 
+              x: flyingItem.endX - flyingItem.startX,
+              y: flyingItem.endY - flyingItem.startY,
+              opacity: 0,
+              scale: 0.5
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed z-50 text-3xl pointer-events-none"
+            style={{ left: `${flyingItem.startX}px`, top: `${flyingItem.startY}px` }}
+          >
+            {flyingItem.emoji}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl font-bold text-emerald-800 mb-4">
-            Our Delicious Menu
-          </h1>
-          <p className="text-emerald-600 text-lg">Discover fresh, healthy meals</p>
+          <h1 className="text-4xl font-bold text-emerald-800 mb-4">Our Delicious Menu</h1>
+          <p className="text-emerald-600 text-lg max-w-2xl mx-auto">
+            Discover fresh, healthy meals prepared with love by our expert chefs
+          </p>
         </motion.div>
-
-        {/* Error Message */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mb-8 p-4 bg-red-50 rounded-xl border border-red-100 flex items-center space-x-3"
-          >
-            <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
-            <span className="text-red-600 font-medium">{error}</span>
-          </motion.div>
-        )}
-
-        {/* Food Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AnimatePresence>
-            {foods.map((food, index) => (
-              <motion.div
-                key={food.id}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ y: -10 }}
-                id={`food-${food.id}`}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-emerald-100 hover:border-emerald-200 transition-all duration-300"
-              >
-                {/* Food Image */}
-                <div className="h-64 bg-emerald-50 flex items-center justify-center overflow-hidden relative">
-                  {food.image ? (
-                    <motion.img 
-                      src={food.image} 
-                      alt={food.name}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5 }}
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f0fdf4'/%3E%3Ctext x='50%' y='50%' font-family='sans-serif' font-size='16' fill='%234ade80' text-anchor='middle' dominant-baseline='middle'%3E🍔%3C/text%3E%3C/svg%3E"
-                      }}
-                    />
-                  ) : (
-                    <motion.span 
-                      className="text-7xl"
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      {foodEmojis[food.category?.toLowerCase()] || foodEmojis.default}
-                    </motion.span>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-100/70 via-transparent to-transparent" />
-                </div>
-                
-                {/* Food Details */}
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <motion.h3 
-                        whileHover={{ x: 2 }}
-                        className="text-xl font-semibold text-emerald-800"
-                      >
-                        {food.name}
-                      </motion.h3>
-                      <p className="text-emerald-600 text-sm mt-2">
-                        {food.description || "Delicious food item"}
-                      </p>
-                    </div>
-                    <motion.span 
-                      whileHover={{ scale: 1.1 }}
-                      className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium"
-                    >
-                      ₹{food.price}
-                    </motion.span>
-                  </div>
-                  
-                  {/* Add to Cart Button */}
-                  <motion.button
-                    onClick={() => handleAddToCart(food)}
-                    disabled={loadingId === food.id}
-                    whileHover={{ scale: loadingId === food.id ? 1 : 1.05 }}
-                    whileTap={{ scale: loadingId === food.id ? 1 : 0.95 }}
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-xl transition-all relative overflow-hidden disabled:opacity-50"
-                  >
-                    <div className="absolute inset-0 bg-white/10 opacity-0 hover:opacity-20 transition-opacity" />
-                    {loadingId === food.id ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="w-5 h-5 border-2 border-white/30 rounded-full animate-spin border-t-white" />
-                        <span>Adding to Cart...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center space-x-2">
-                        <span>+</span>
-                        <span>Add to Cart</span>
-                      </div>
-                    )}
-                  </motion.button>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+        <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {foods.map((food, i) => (
+            <FoodCard
+              key={food.id}
+              food={food}
+              index={i}
+              highlightedId={highlightedId}
+              loadingId={loadingId}
+              handleAddToCart={handleAddToCart}
+            />
+          ))}
         </div>
-
-        {/* Empty State */}
-        {foods.length === 0 && !error && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-center py-16"
-          >
-            <div className="mb-6 text-8xl text-emerald-300">🍽️</div>
-            <p className="text-2xl text-emerald-600 font-medium">Menu is empty</p>
-            <p className="text-emerald-500 mt-2">Our chefs are preparing something special</p>
-          </motion.div>
-        )}
       </div>
     </div>
   );
 }
+
+export default Foods;

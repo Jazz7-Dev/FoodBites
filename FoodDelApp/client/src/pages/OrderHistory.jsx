@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { getFoodAsset } from "../utils/foodAssets";
 
 export default function OrderHistory({ token }) {
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/orders/my-orders", {
+        const res = await axios.get(`${API_BASE_URL}/api/orders/my-orders`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setOrders(res.data || []);
@@ -21,7 +23,7 @@ export default function OrderHistory({ token }) {
       }
     };
     fetchOrders();
-  }, [token]);
+  }, [token, API_BASE_URL]);
 
   if (loading) {
     return (
@@ -123,7 +125,11 @@ export default function OrderHistory({ token }) {
                             whileHover={{ rotate: 10 }}
                             className="bg-emerald-100 p-3 rounded-lg"
                           >
-                            <span className="text-emerald-700">📦</span>
+                            <img 
+                              src="https://images.unsplash.com/photo-1550547660-d9450f859349?w=40&auto=format&fit=crop" 
+                              alt="Burger" 
+                              className="w-8 h-8 object-cover rounded"
+                            />
                           </motion.div>
                           <div>
                             <p className="font-semibold text-emerald-800">Order #{order?._id?.slice(-8).toUpperCase()}</p>
@@ -175,29 +181,47 @@ export default function OrderHistory({ token }) {
                       <div className="border-t border-emerald-100 pt-4">
                         <h3 className="text-sm font-semibold text-emerald-600 mb-3">Items Ordered</h3>
                         <div className="space-y-3">
-                          {order?.items?.map((item, index) => (
-                            <motion.div
-                              key={index}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: index * 0.05 }}
-                              whileHover={{ x: 5 }}
-                              className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100"
-                            >
-                              <div className="flex items-center space-x-3">
-                                <span className="text-emerald-600">🍔</span>
-                                <span className="font-medium text-emerald-800">
-                                  {item?.foodId?.name || 'Unknown Item'}
-                                </span>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-emerald-700">
-                                  ₹{item?.foodId?.price ? item.foodId.price.toFixed(2) : '00.00'}
-                                </p>
-                                <p className="text-sm text-emerald-600">Qty: {item?.quantity || 1}</p>
-                              </div>
-                            </motion.div>
-                          ))}
+                          {order?.items?.map((item, index) => {
+                            const foodItem = item.foodId || {};
+                            const asset = getFoodAsset(foodItem);
+                            const imageUrl = foodItem.image 
+                              ? foodItem.image.startsWith('http') 
+                                ? foodItem.image 
+                                : `${API_BASE_URL}${foodItem.image}`
+                              : asset.defaultImage;
+                            
+                            return (
+                              <motion.div
+                                key={index}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: index * 0.05 }}
+                                whileHover={{ x: 5 }}
+                                className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100"
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <img 
+                                    src={imageUrl}
+                                    alt={foodItem.name || 'Food Item'} 
+                                    className="w-8 h-8 object-cover rounded"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = asset.defaultImage;
+                                    }}
+                                  />
+                                  <span className="font-medium text-emerald-800">
+                                    {foodItem.name || 'Unknown Item'}
+                                  </span>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-emerald-700">
+                                    ₹{foodItem.price ? foodItem.price.toFixed(2) : '00.00'}
+                                  </p>
+                                  <p className="text-sm text-emerald-600">Qty: {item.quantity || 1}</p>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
                         </div>
                       </div>
                     </motion.div>
