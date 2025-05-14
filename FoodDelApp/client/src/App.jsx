@@ -10,6 +10,7 @@ import Cart from "./pages/Cart";
 import OrderHistory from "./pages/OrderHistory";
 import Foods from "./pages/Foods";
 import Navbar from "./components/Navbar";
+import OAuthSuccess from "./pages/OAuthSuccess";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -46,6 +47,10 @@ function App() {
           <Route
             path="/foods"
             element={token ? <Foods /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/oauth-success"
+            element={<OAuthSuccess setToken={setToken} />}
           />
         </Routes>
       </Router>

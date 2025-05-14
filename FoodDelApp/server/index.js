@@ -1,11 +1,16 @@
+require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const passport = require("passport");
+require("./config/passport");
 const authRoutes = require("./routes/auth");
 const foodRoutes = require("./routes/foods");
 const orderRoutes = require("./routes/orders");
 const userRoutes = require("./routes/users");
+
+console.log('Loaded GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID);
 
 dotenv.config();
 
@@ -15,6 +20,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize());
 
 // Root route
 app.get("/", (req, res) => {

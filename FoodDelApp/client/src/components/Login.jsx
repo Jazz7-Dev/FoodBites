@@ -35,6 +35,10 @@ export default function Login({ setToken }) {
     }
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:5000/api/auth/google";
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -66,7 +70,7 @@ export default function Login({ setToken }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-emerald-600"
+            
           >
             Sign in to your FoodBites account
           </motion.p>
@@ -187,6 +191,37 @@ export default function Login({ setToken }) {
               )}
             </motion.button>
           </form>
+
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={handleGoogleLogin}
+              className="flex items-center space-x-3 px-6 py-3 border border-emerald-300 rounded-xl hover:bg-emerald-50 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                viewBox="0 0 48 48"
+              >
+                <path
+                  fill="#fbc02d"
+                  d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 7.053 29.268 5 24 5 12.954 5 4 13.954 4 25s8.954 20 20 20c11.046 0 20-8.954 20-20 0-1.341-.138-2.65-.389-3.917z"
+                />
+                <path
+                  fill="#e53935"
+                  d="M6.306 14.691l6.571 4.819C14.655 16.108 18.992 13 24 13c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 7.053 29.268 5 24 5 16.318 5 9.656 9.86 6.306 14.691z"
+                />
+                <path
+                  fill="#4caf50"
+                  d="M24 43c5.421 0 10.287-2.184 13.824-5.732l-6.57-5.429C29.91 33.91 27.11 35 24 35c-5.202 0-9.63-3.522-11.303-8.5H6.306C8.954 37.14 15.318 43 24 43z"
+                />
+                <path
+                  fill="#1565c0"
+                  d="M43.611 20.083H42V20H24v8h11.303c-1.025 2.893-3.14 5.243-5.842 6.627l6.57 5.429C38.29 34.91 42 30.523 42 25c0-1.341-.138-2.65-.389-3.917z"
+                />
+              </svg>
+              <span className="text-emerald-700 font-semibold">Sign in with Google</span>
+            </button>
+          </div>
 
           <motion.div
             initial={{ opacity: 0 }}
